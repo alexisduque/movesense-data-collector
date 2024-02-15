@@ -1,0 +1,31 @@
+# Configuration file for a data-collection session
+
+# Output folder for saving data
+output:
+  path: outputs
+  # Name template. Extended with timestamp when multiple collections are done. If empty, prompted at runtime.
+  filename:
+
+
+# Preset devices. Built from device MAC address, and measurement paths to be subscribed to.
+# E.g. Meas/Acc/13 for accelerometer measurements at 13Hz. Refer to MoveSense API for more details
+# It appears that the API ignores the higher sampling rates. This could be firmware issue, or perhaps require some other
+# pathing? Documentation for API and important parts: https://bitbucket.org/movesense/movesense-device-lib/src/master/
+# Hypothesis: The sampling rate is not read from the path and the API requires a separate call for adjusting.
+# Alternative: BLE or individual devices struggle with the data-rate or rate of packages (unlikely)
+devices:
+  - address: 0C:8C:DC:35:D9:56  # 1817
+    paths:
+      - Meas/Acc/13
+      #- Meas/Gyro/13
+      #- Meas/Magn/13
+  - address: 0C:8C:DC:34:CA:24  # 0383
+    paths:
+      - Meas/Acc/13
+      #- Meas/Gyro/13
+      #- Meas/Magn/13
+  - address: 0C:8C:DC:34:E8:FE  # 1947
+    paths:
+      - Meas/Acc/13
+      #- Meas/Gyro/13
+      #- Meas/Magn/13
