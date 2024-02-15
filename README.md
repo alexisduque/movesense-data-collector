@@ -23,13 +23,13 @@ on desktop devices, with ease of connectivity to multiple devices and combining 
 1. Clone this repository:
 
     ```bash
-    git clone https://github.com/HerraHiekka/MoveSenseDataCollection.git
+    git clone https://github.com/HerraHiekka/MoveSenseDataCollectior.git
     ```
 
 2. Navigate to the project directory:
 
     ```bash
-    cd MoveSenseDataCollection
+    cd movesense-data-collector
     ```
 
 3. Install the required dependencies:
