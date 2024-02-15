@@ -98,7 +98,7 @@ Currently, the largest issues are listed below, but basic functionality of the C
 - [ ] (Bug) Can not change sampling rate of individual devices via MoveSense REST-API. Another path required?
 - [ ] Due to above, data collection with multiple mismatching framerates not tested.
 - [ ] (Feature) Session configs should be made saveable, when edited during runtime.
-- [ ] (Refactor) 
+- [ ] (Refactor) The sensor id's for BLE are currently hard-coded. Different structure would be better.
 
 ## Contributors
 
