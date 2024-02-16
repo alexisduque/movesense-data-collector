@@ -50,10 +50,12 @@ class MovesenseDeviceManager:
                             id_bytes[1] = id_bytes[1] - 1
                         elif "Magn" in path:
                             id_bytes[1] = id_bytes[1] - 2
-                        elif "Temperature" in path:
+                        elif "IMU9" in path:
                             id_bytes[1] = id_bytes[1] - 3
-                        elif "ECG" in path:
+                        elif "Temp" in path:
                             id_bytes[1] = id_bytes[1] - 4
+                        elif "ECG" in path:
+                            id_bytes[1] = id_bytes[1] - 5
 
                         byte_path = id_bytes + bytearray(path, "utf-8")
 

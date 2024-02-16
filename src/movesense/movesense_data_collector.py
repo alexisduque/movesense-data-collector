@@ -86,10 +86,14 @@ class MovesenseDataCollector:
             sensor_type, timestamp, sensor_data = (
                 "Magn", d.get_uint_32(2), (d.get_float_32(6), d.get_float_32(10), d.get_float_32(14)))
         elif type_bytes[-1] == 96:
-            # This is untested, and assumed to only yield a single reading
-            sensor_type, timestamp, sensor_data = "Temperature", d.get_uint_32(2), (d.get_float_32(6))
+            sensor_type, timestamp, sensor_data = ("IMU9", d.get_uint_32(2), (d.get_float_32(6), d.get_float_32(10), d.get_float_32(14),
+                                                                             d.get_float_32(18), d.get_float_32(22), d.get_float_32(26),
+                                                                             d.get_float_32(30), d.get_float_32(34), d.get_float_32(38)))
         elif type_bytes[-1] == 95:
             # This is untested, and assumed to only yield a single reading
+            sensor_type, timestamp, sensor_data = "Temp", d.get_uint_32(2), (d.get_float_32(6))
+        elif type_bytes[-1] == 94:
+            # ECG packages are much larger (70 bytes), with currently unknown content
             sensor_type, timestamp, sensor_data = "ECG", d.get_uint_32(2), (d.get_float_32(6))
         else:
             logger.error("Unknown sensor type")
