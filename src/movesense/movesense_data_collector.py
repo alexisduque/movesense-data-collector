@@ -133,7 +133,7 @@ class MovesenseDataCollector:
         # Split the sensor_data columns into separate XYZ columns
         for col in df_pivot.columns:
             if "sensor_data" in col and ("Acc" in col or "Magn" in col or "Gyro" in col):
-                df_pivot[["".join(col) + "_X", "".join(col) + "_Y", "".join(col) + "_Z"]] = df_pivot[col].apply(lambda x: pd.Series(x))
+                df_pivot[["_".join(col) + "_X", "_".join(col) + "_Y", "_".join(col) + "_Z"]] = df_pivot[col].apply(lambda x: pd.Series(x))
                 df_pivot.drop(col, axis=1, inplace=True)
 
         df_pivot.columns = [' '.join(col).strip() for col in df_pivot.columns.values]

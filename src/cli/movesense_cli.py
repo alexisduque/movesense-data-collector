@@ -148,7 +148,7 @@ class MovesenseCLI:
 
 
     def start_collection_activity(self):
-        logger.info("Starting data collection. Press x to terminate")
+        logger.info("Starting data collection. Press ctrl+c to terminate")
         self.device_manager.start_data_collection_sync()
 
         try:

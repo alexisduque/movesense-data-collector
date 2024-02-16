@@ -18,6 +18,7 @@ env/
 # Logs and databases
 *.log
 *.sqlite3
+*.yaml
 
 # Miscellaneous
 .DS_Store
