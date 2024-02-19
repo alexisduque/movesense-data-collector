@@ -1,5 +1,6 @@
 import asyncio
 import struct
+import os
 import pandas as pd
 import numpy as np
 
@@ -59,6 +60,9 @@ class MovesenseDeviceManager:
             logger.info("No session config found.")
             self.output_file = "data_collection.csv"
             self.output_path = "./"
+
+        os.makedirs(self.output_path, exist_ok=True)
+
 
     def run_coroutine_sync(self, coroutine):
         return self.loop.run_until_complete(coroutine)
@@ -142,7 +146,20 @@ class MovesenseDeviceManager:
         # Save the collected data
         data_frame = self.unify_notifications()
 
+        if self.output_file is not None:
+            filename, extension = os.path.splitext(self.output_file)
+            counter = 1
+            while os.path.exists(os.path.join(self.output_path, self.output_file)):
+                self.output_file = f"{filename}_{counter}{extension}"
+                counter += 1
+        else:
+            self.output_file = "data_output.csv"
+
+        data_frame.to_csv(os.path.join(self.output_path, self.output_file), index=False)
+
+
         logger.info("Data collection complete.")
+
 
     def unify_notifications(self):
         all_data = []

@@ -53,8 +53,8 @@ To start data collection using the CLI, follow these steps:
                     # a number when multiple data collections are done
    devices:         # List of adress-path objects.
    -   address: 00:00:00:00:00:00 # MoveSense device address
-       paths:                     # List of sensor paths to subscribe to
-         - /Meas/Acc/13           # Find more details in MoveSense
+        paths:                     # List of sensor paths to subscribe to
+           - /Meas/Acc/13           # Find more details in MoveSense
                                   # official documentation.
     ```
 
@@ -95,8 +95,8 @@ Currently, the largest issues are listed below, but basic functionality of the C
 ## WIP Tasks
 
 - [ ] (Bug) Async issue on disconnecting all devices, causes a crash on exit.
-- [ ] (Bug) Can not change sampling rate of individual devices via MoveSense REST-API. Another path required?
-- [ ] Due to above, data collection with multiple mismatching framerates not tested.
+- ~~[x] (Bug) Can not change sampling rate of individual devices via MoveSense REST-API. Another path required?~~
+- ~~[x] Due to above, data collection with multiple mismatching framerates not tested.~~
 - [ ] (Feature) Session configs should be made saveable, when edited during runtime.
 - [ ] (Refactor) The sensor id's for BLE are currently hard-coded. Different structure would be better.
 
