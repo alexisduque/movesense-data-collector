@@ -107,11 +107,28 @@ class MovesenseSensor:
 
     async def notification_handler(self, device_address, data):
 
+        # Unpack the data based on the sensor, ignoring the timestamp and id
+        if self.sensor_type == MovesenseSensorType.ECG:
+            packet_structure = '<' + ((len(data)-6)//4)*'i'
+            data = struct.unpack(packet_structure, data[6:])
+        elif self.sensor_type == MovesenseSensorType.HEART_RATE:
+            packet_structure = '<' + 'h'
+            data = struct.unpack(packet_structure, data[6:])
+        else:
+            packet_structure = '<' + ((len(data)-6)//4)*'f'
+            data = struct.unpack(packet_structure, data[6:])
+
         # Timestamp by arrival time
         local_timestamp = datetime.datetime.now().timestamp()
 
         # Shape the data
-        data = np.array(data).reshape(-1, self.sensor_type.axes)
+        if self.sensor_type.axes > 1:
+            # Data is passed in single array in following structure: sensor, axis, instance.
+            # Reshape splits into three axes, split divides it into different sensors, stack to create
+            # the full table of instances.
+            data = np.hstack(np.split(np.array(data).reshape(-1, 3), self.sensor_type.axes//3))
+        else:
+            data = np.array(data).reshape(-1, 1)
 
         if self.sensor_type not in [MovesenseSensorType.TEMPERATURE, MovesenseSensorType.HEART_RATE]:
             # Sampling period

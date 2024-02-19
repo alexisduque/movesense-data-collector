@@ -95,10 +95,10 @@ Currently, the largest issues are listed below, but basic functionality of the C
 ## WIP Tasks
 
 - [ ] (Bug) Async issue on disconnecting all devices, causes a crash on exit.
-- ~~[x] (Bug) Can not change sampling rate of individual devices via MoveSense REST-API. Another path required?~~
-- ~~[x] Due to above, data collection with multiple mismatching framerates not tested.~~
+- [x] ~~(Bug) Can not change sampling rate of individual devices via MoveSense REST-API. Another path required?~~
+- [x] ~~Due to above, data collection with multiple mismatching framerates not tested.~~
 - [ ] (Feature) Session configs should be made saveable, when edited during runtime.
-- [ ] (Refactor) The sensor id's for BLE are currently hard-coded. Different structure would be better.
+- [x] ~~(Refactor) The sensor id's for BLE are currently hard-coded. Different structure would be better.~~
 
 ## Contributors
 

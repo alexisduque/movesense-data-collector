@@ -26,14 +26,17 @@ class ConnectedDevice:
 
     # Distribution to individual sensor handlers
     async def notification_handler(self, sender, data):
+        # Read just the start of the data for id purposes
+        id_data = data[:2]
+
         n = len(data)
 
         # little endian, start char, id char, uint32 timestamp, samples...
-        packet_structure = '<' + 2 * 'c' + 'I' + ((n - 6) // 4) * 'f'
-        packet = struct.unpack(packet_structure, data)
+        packet_structure = '<' + 2 * 'c'
+        packet = struct.unpack(packet_structure, id_data)
         sensor_id = int.from_bytes(packet[1], byteorder='little')
 
-        await self.sensors[sensor_id].notification_handler(self.device.address, packet[3:])
+        await self.sensors[sensor_id].notification_handler(self.device.address, data)
 
 
 class MovesenseDeviceManager:
