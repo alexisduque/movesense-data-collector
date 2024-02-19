@@ -19,6 +19,8 @@ env/
 *.log
 *.sqlite3
 *.yaml
+*.csv
+*.npy
 
 # Miscellaneous
 .DS_Store

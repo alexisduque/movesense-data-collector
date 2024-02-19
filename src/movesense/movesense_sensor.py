@@ -112,8 +112,11 @@ class MovesenseSensor:
             packet_structure = '<' + ((len(data)-6)//4)*'i'
             data = struct.unpack(packet_structure, data[6:])
         elif self.sensor_type == MovesenseSensorType.HEART_RATE:
-            packet_structure = '<' + 'h'
-            data = struct.unpack(packet_structure, data[6:])
+            # Heartrate comes without timestamp, but instead, provides average heartrate and
+            # rrData (assumed rr-difference).
+            # We only really care about the average heartrate so rrData is skipped here.
+            packet_structure = '<fh'
+            data = struct.unpack(packet_structure, data[2:])[0]
         else:
             packet_structure = '<' + ((len(data)-6)//4)*'f'
             data = struct.unpack(packet_structure, data[6:])
