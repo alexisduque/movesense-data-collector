@@ -2,8 +2,11 @@ import sys
 import re
 import asyncio
 
+from src.movesense.movesense_sensor import MovesenseSensor
 from src.movesense.movesense_device_manager import MovesenseDeviceManager
+
 import logging
+
 logger = logging.getLogger("__main__")
 
 
@@ -27,7 +30,7 @@ class MovesenseCLI:
 
         if not found_devices:
             logger.warning("No MoveSense devices found. Make sure that the MoveSense devices are turned on, and not "
-                        "connected to another device.")
+                           "connected to another device.")
             return
         else:
             logger.info("Select the MoveSense Device to connect to (list-id or mac-address)")
@@ -36,8 +39,9 @@ class MovesenseCLI:
             # Regex match for MAC address input (MAC address regex)
             if re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", choice.lower()):
                 # Find the device with the specified MAC address
-                selected_device = next((device for device in found_devices if device.device.address.lower() == choice.lower()),
-                                       None)
+                selected_device = next(
+                    (device for device in found_devices if device.device.address.lower() == choice.lower()),
+                    None)
 
                 if selected_device:
                     try:
@@ -48,7 +52,8 @@ class MovesenseCLI:
                             self.config["devices"] = [{"address": selected_device, "paths": []}]
                         logger.info(f"Connected to device with MAC address: {selected_device.device.device.address}")
                     except Exception as e:
-                        logger.error(f"Failed to connect to device with MAC address '{selected_device.device.device.address}': {e}")
+                        logger.error(
+                            f"Failed to connect to device with MAC address '{selected_device.device.device.address}': {e}")
                 else:
                     logger.warning(f"No device found with MAC address '{choice}'")
 
@@ -61,7 +66,8 @@ class MovesenseCLI:
                     else:
                         self.config["devices"] = [{"address": found_devices[index].address, "paths": []}]
 
-                    logger.info(f"Connected to device with list-id: {index + 1}, and MAC address: {found_devices[index].address}")
+                    logger.info(
+                        f"Connected to device with list-id: {index + 1}, and MAC address: {found_devices[index].address}")
                 except ValueError:
                     logger.error(f"Invalid input. Please enter a valid list-id as an integer or a MAC address.")
                 except IndexError:
@@ -116,7 +122,9 @@ class MovesenseCLI:
                 logger.info("4. Subscribe to Magnetometer")
                 logger.info("5. Subscribe to Temperature")
                 logger.info("7. Subscribe to ECG")
-                logger.info("8. Return")
+                logger.info("8. Subscribe to IMU6")
+                logger.info("9. Subscribe to IMU9")
+                logger.info("10. Return")
 
                 choice = input()
 
@@ -124,9 +132,9 @@ class MovesenseCLI:
                     logger.info("Rename the device")
                     choice = input("New device name:")
                     self.device_manager.rename_device(device, choice)
-                elif choice == "2" or choice == "3" or choice == "4" or choice == "5" or choice == "6" or choice == "7":
-                    sensor_full = ["Acceleration", "Gyroscope", "Magnetometer", "Temperature", "ECG"][int(choice) - 2]
-                    sensor_abbreviation = ["Accel", "Gyro", "Magn", "Temperature", "ECG"][int(choice)]
+                elif choice in list(map(lambda x: str(x), range(2, 9 + 1))):
+                    sensor_full = ["Acceleration", "Gyroscope", "Magnetometer", "Temperature", "ECG", "IMU6", "IMU9"][
+                        int(choice) - 2]
                     msg = "Subscribe to " + sensor_full
                     logger.info(msg)
 
@@ -135,24 +143,26 @@ class MovesenseCLI:
                         fs = int(input())
                         # Subscription path determines response id (fixed for ease of use), "Meas", the sensor type,
                         # and sampling rate
-                        self.config["devices"][device.address]["paths"].append(f"Meas/{sensor_abbreviation}/{fs}")
-                        self.device_manager.subscribe_to_sensor(device, bytearray([1, 99-int(choice)+2]) +
-                                                                bytearray(f"Meas/{sensor_abbreviation}/{fs}", "utf-8"))
+                        sensor = MovesenseSensor(sensor_full, fs)
+
+                        self.config["devices"][device.address]["paths"].append(
+                            f"Meas/{sensor.sensor_type.value}/{sensor.sampling_rate.value}")
+                        self.device_manager.subscribe_to_sensor(device, sensor)
                     except ValueError:
                         logger.error(f"Invalid input. Please enter a valid integer choice.")
-                elif choice == "8":
+                elif choice == "10":
                     raise KeyboardInterrupt
 
         except KeyboardInterrupt:
             logger.info("Exiting the device configuration")
-
 
     def start_collection_activity(self):
         logger.info("Starting data collection. Press ctrl+c to terminate")
         self.device_manager.start_data_collection_sync()
 
         try:
-            asyncio.get_event_loop().run_until_complete(asyncio.Event().wait())  # Wait indefinitely until the event is set
+            asyncio.get_event_loop().run_until_complete(
+                asyncio.Event().wait())  # Wait indefinitely until the event is set
         except KeyboardInterrupt:
             logger.info("Ending data collection, saving...")
         finally:
@@ -179,11 +189,6 @@ class MovesenseCLI:
                 break
             else:
                 logger.warning(f"Unrecognized selection {choice}")
-
-
-
-
-
 
 
 if __name__ == "__main__":

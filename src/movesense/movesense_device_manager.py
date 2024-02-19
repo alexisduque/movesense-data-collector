@@ -1,12 +1,16 @@
-from bleak import BleakScanner, BleakClient
 import asyncio
+import struct
+import pandas as pd
+import numpy as np
+
 import logging
+
 logger = logging.getLogger("__main__")
 
+from bleak import BleakScanner, BleakClient
 from bleak.backends.device import BLEDevice
 
-from src.movesense.movesense_data_collector import MovesenseDataCollector
-
+from src.movesense.movesense_sensor import MovesenseSensor
 
 WRITE_CHARACTERISTIC = "34800001-7185-4d5d-b431-630e7050e8f0"
 NOTIFY_CHARACTERISTIC = "34800002-7185-4d5d-b431-630e7050e8f0"
@@ -17,78 +21,84 @@ class ConnectedDevice:
     def __init__(self, device: BLEDevice, client: BleakClient):
         self.device = device
         self.client = client
+        self.sensors = {}
+
+    # Distribution to individual sensor handlers
+    async def notification_handler(self, sender, data):
+        n = len(data)
+
+        # little endian, start char, id char, uint32 timestamp, samples...
+        packet_structure = '<' + 2 * 'c' + 'I' + ((n - 6) // 4) * 'f'
+        packet = struct.unpack(packet_structure, data)
+        sensor_id = int.from_bytes(packet[1], byteorder='little')
+
+        await self.sensors[sensor_id].notification_handler(self.device.address, packet[3:])
 
 
 class MovesenseDeviceManager:
     def __init__(self, config=None):
-
-        self.data_collector = MovesenseDataCollector()
-
         self.loop = asyncio.get_event_loop()  # Create an event loop
         self.connected_devices = []
 
         # If we have a predefined session config, we utilize it
         if config:
             self.config = config
-            # Collect the connectable devices
-            available_devices = self.get_available_devices()
 
             for d in config["devices"]:
-                if d["address"] not in [device.address for device in available_devices]:
-                    logger.warning(f"Could not connect to device: {d['address']}")
-                else:
-                    # Connect to device
-                    target_device = next((device for device in available_devices if device.address == d["address"]), None)
-                    connected_device = self.connect(target_device)
-                    # Subscribe to the data channels
-                    for path in d["paths"]:
-                        # Add ids to the paths so they can be recognized at read time
-                        id_bytes = bytearray([1, 99])
-                        if "Acc" in path:
-                            id_bytes[1] = id_bytes[1] - 0
-                        elif "Gyro" in path:
-                            id_bytes[1] = id_bytes[1] - 1
-                        elif "Magn" in path:
-                            id_bytes[1] = id_bytes[1] - 2
-                        elif "IMU9" in path:
-                            id_bytes[1] = id_bytes[1] - 3
-                        elif "Temp" in path:
-                            id_bytes[1] = id_bytes[1] - 4
-                        elif "ECG" in path:
-                            id_bytes[1] = id_bytes[1] - 5
 
-                        byte_path = id_bytes + bytearray(path, "utf-8")
+                connected_device = self.search_and_connect(d['address'])
 
-                        self.subscribe_to_sensor(connected_device, byte_path)
+                for path in d['paths']:
+                    self.subsribe_to_sensor(connected_device, path)
+
             logger.info("Session config loaded.")
+
+            self.output_file = config["output"]["filename"]
+            self.output_path = config["output"]["path"]
         else:
             logger.info("No session config found.")
-
+            self.output_file = "data_collection.csv"
+            self.output_path = "./"
 
     def run_coroutine_sync(self, coroutine):
         return self.loop.run_until_complete(coroutine)
 
-    def get_available_devices(self, show_all=False):
+    def get_available_devices(self, show_all=False, logging=True):
         logger.info("Searching for available devices...")
         devices = self.run_coroutine_sync(BleakScanner.discover(timeout=5.0))
         found_devices = []
         for device in devices:
             if show_all or "movesense" in device.name.lower():
                 found_devices.append(device)
-                logger.info(f"Found device: {len(found_devices)}. {device.name} - {device.address}")
+                if logging:
+                    logger.info(f"Found device: {len(found_devices)}. {device.name} - {device.address}")
 
         return found_devices
 
     def connect(self, device):
-        async def connection_coroutine(device):
-            client = BleakClient(device.address)
-            await client.connect()
-            logger.info(f"Connected to {device.name} ({device.address})")
-            connected_device = ConnectedDevice(device, client)
-            self.connected_devices.append(connected_device)
-            return connected_device
+        return self.run_coroutine_sync(self._async_connect(device))
 
-        return self.run_coroutine_sync(connection_coroutine(device))
+    async def _async_connect(self, device):
+        client = BleakClient(device.address)
+        await client.connect()
+        logger.info(f"Connected to {device.name} ({device.address})")
+        connected_device = ConnectedDevice(device, client)
+        self.connected_devices.append(connected_device)
+        return connected_device
+
+    def search_and_connect(self, address):
+
+        async def connection_coroutine(available_devices, address):
+            connectable_device = next((device for device in available_devices if device.address == address), None)
+
+            if connectable_device is None:
+                logger.error(f"Could not connect to device {address}")
+
+            return await self._async_connect(connectable_device)
+
+        # Separated so async contexts don't start new async contexts.
+        available_devices = self.get_available_devices(logging=False)
+        return self.run_coroutine_sync(connection_coroutine(available_devices, address))
 
     def show_connected_devices(self):
         logger.info("Connected MoveSense devices:")
@@ -101,10 +111,16 @@ class MovesenseDeviceManager:
 
         self.run_coroutine_sync(rename_coroutine(device, new_name))
 
-    def subscribe_to_sensor(self, device, path):
-        async def subscribe_coroutine(device, path):
-            await device.client.write_gatt_char(WRITE_CHARACTERISTIC, path, response=True)
-        self.run_coroutine_sync(subscribe_coroutine(device, path))
+    def subsribe_to_sensor(self, device, sensor):
+        async def subsribe_coroutine(device, sensor):
+            # Allow path creation of the sensor.
+            if isinstance(sensor, str):
+                sensor = MovesenseSensor.from_path(sensor)
+
+            await device.client.write_gatt_char(WRITE_CHARACTERISTIC, sensor.path, response=True)
+            device.sensors[sensor.id] = sensor
+
+        self.run_coroutine_sync(subsribe_coroutine(device, sensor))
 
     def start_data_collection_sync(self):
         logger.debug("Enabling notifications.")
@@ -115,7 +131,7 @@ class MovesenseDeviceManager:
 
     async def start_notify_coroutine(self, device):
         await device.client.start_notify(NOTIFY_CHARACTERISTIC, lambda sender, data: asyncio.ensure_future(
-            self.data_collector.handle_notification(device.device.address, data)))
+            device.notification_handler(sender, data)))
 
     def end_data_collection(self):
         logger.debug("Disabling notifications.")
@@ -124,9 +140,69 @@ class MovesenseDeviceManager:
             self.run_coroutine_sync(device.client.stop_notify(NOTIFY_CHARACTERISTIC))
 
         # Save the collected data
-        self.data_collector.unify_notifications().to_csv("./data_output.csv", sep=",", index=False)
+        data_frame = self.unify_notifications()
 
         logger.info("Data collection complete.")
+
+    def unify_notifications(self):
+        all_data = []
+        for device in self.connected_devices:
+            for _, sensor in device.sensors.items():
+                all_data.extend(sensor.data)
+
+        # Create a Pandas DataFrame from the notifications
+        df = pd.DataFrame(all_data)
+
+        # We get the highest number of observations per sensor type available. This is used effectively as
+        # "sampling rate" in the following transforms
+        df.insert(0, "id", range(0, len(df)))
+        highest_observation_count = df.groupby(["device", "sensor_type"])["id"].count().max()
+
+        # We compute relative integer ids such that their density spans the highest count, but the observations
+        # are set to be more sparse automatically. While this does not track the timestamps perfectly, it allows
+        # combining the representation to be more dense. The sampling rates are nearly doubles of each other, which helps.
+        df["relative_id"] = df.groupby(["device", "sensor_type"])["id"].transform(
+            lambda x: ((x - x.min()) / ((x - x.min()).max()) * highest_observation_count).astype(int))
+
+        # Pivot the DataFrame to get the desired structure
+        df_pivot = df.pivot_table(
+            index=["relative_id"],
+            columns=["device", "sensor_type"],
+            values=["timestamp", "sensor_data"],
+            aggfunc=lambda x: x,
+        ).reset_index()
+
+        # Split the sensor_data columns into separate XYZ columns
+        for col in df_pivot.columns:
+            if "sensor_data" not in col:
+                continue
+
+            if "Acc" in col or "Magn" in col or "Gyro" in col:
+                df_pivot[["_".join(col[1:]) + ax for ax in ["_X", "_Y", "_Z"]]] = (df_pivot[col]
+                                                                                   .apply(lambda x: pd.Series(x)))
+                df_pivot.drop(col, axis=1, inplace=True)
+            elif "Temp" in col or "ECG" in col or "HR" in col:
+                df_pivot["_".join(col[1:])] = df_pivot[col].apply(lambda x: pd.Series(x))
+                df_pivot.drop(col, axis=1, inplace=True)
+            elif "IMU6" in col:
+                df_pivot[
+                    ["_".join(col[1:]) + ax for ax in ["_Acc_X", "_Acc_Y", "_Acc_Z", "_Gyro_X", "_Gyro_Y", "_Gyro_Z"]]] \
+                    = df_pivot[col].apply(lambda x: pd.Series(x))
+                df_pivot.drop(col, axis=1, inplace=True)
+            elif "IMU9" in col:
+                df_pivot[["_".join(col[1:]) + ax for ax in
+                          ["_Acc_X", "_Acc_Y", "_Acc_Z", "_Gyro_X", "_Gyro_Y", "_Gyro_Z", "_Magn_X", "_Magn_Y",
+                           "_Magn_Z"]]] \
+                    = df_pivot[col].apply(lambda x: pd.Series(x))
+                df_pivot.drop(col, axis=1, inplace=True)
+
+        df_pivot.columns = [' '.join(col).strip() for col in df_pivot.columns.values]
+
+        # Merge the local_timestamp columns
+        df_pivot.insert(0, "timestamp", df_pivot.filter(like="timestamp").min(axis=1))
+        df_pivot = df_pivot[df_pivot.columns.drop(list(df_pivot.filter(regex="timestamp.+")))]
+
+        return df_pivot
 
     def disconnect_device(self, device_id):
         async def disconnect_coroutine(device_id):
