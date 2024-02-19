@@ -52,9 +52,9 @@ To start data collection using the CLI, follow these steps:
       filename:     # Filename template, which will be extended with
                     # a number when multiple data collections are done
    devices:         # List of adress-path objects.
-   -   address: 00:00:00:00:00:00 # MoveSense device address
-        paths:                     # List of sensor paths to subscribe to
-           - /Meas/Acc/13           # Find more details in MoveSense
+   - address: 00:00:00:00:00:00 # MoveSense device address
+      paths:                     # List of sensor paths to subscribe to
+      - /Meas/Acc/13           # Find more details in MoveSense
                                   # official documentation.
     ```
 

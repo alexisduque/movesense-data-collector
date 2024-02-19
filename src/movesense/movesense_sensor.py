@@ -52,6 +52,9 @@ class MovesenseSamplingRate(Enum):
     _500_HZ = 500
     _512_HZ = 512
 
+    # None-type for HR and Temperature
+    NONE = None
+
     @classmethod
     def from_int(cls, value):
         for member in cls:
@@ -61,7 +64,7 @@ class MovesenseSamplingRate(Enum):
 
 
 """
-Acts as an instance for datacollection, maintaining the sensor type and unpacking the data appropriately.
+Acts as an instance for data collection, maintaining the sensor type and unpacking the data appropriately.
 Movesense data packets have shape: c c uint32 float32 float32 float32... Where the float sequence is the data.
 Depending on the sensor, the data might represent multiple axes. Timestamp is the time of the first data sample.
 """
@@ -80,15 +83,27 @@ class MovesenseSensor:
         MovesenseSensor.id_counter += 1
 
         # Path which is subscribed to for collecting data from this sensor
+        # Same rootpath for everything
+        path = f"/Meas/{self.sensor_type.value}"
+        if self.sensor_type not in [MovesenseSensorType.HEART_RATE, MovesenseSensorType.TEMPERATURE]:
+           # Temp and HR seem to not use sampling rates (which makes sense), so for others, we append the fs.
+           path += f"/{self.sampling_rate.value}"
         self.path = (bytearray([1, self.id]) +
-                     bytearray(f"/Meas/{self.sensor_type.value}/{self.sampling_rate.value}", "utf-8"))
+                     bytearray(path, "utf-8"))
 
         self.data = []
 
     @classmethod
     def from_path(cls, path):
-        _, _, sensor_type, sampling_rate = path.split("/")
-        return MovesenseSensor(sensor_type, int(sampling_rate))
+        components = path.split("/")
+        sensor_type = components[2]
+
+        if len(components) == 4:
+            sampling_rate = int(components[3])
+        else:
+            sampling_rate = None
+
+        return MovesenseSensor(sensor_type, sampling_rate)
 
     async def notification_handler(self, device_address, data):
 
@@ -98,21 +113,30 @@ class MovesenseSensor:
         # Shape the data
         data = np.array(data).reshape(-1, self.sensor_type.axes)
 
-        # Sampling period
-        T_s = 1. / self.sampling_rate.value
+        if self.sensor_type not in [MovesenseSensorType.TEMPERATURE, MovesenseSensorType.HEART_RATE]:
+            # Sampling period
+            T_s = 1. / self.sampling_rate.value
 
-        # Extend timestamp to each instance, starting from past since recorded timestamp is arrival time.
-        local_timestamp = np.linspace(-T_s*data.shape[0], 0, data.shape[0]) + local_timestamp
+            # Extend timestamp to each instance, starting from past since recorded timestamp is arrival time.
+            local_timestamp = np.linspace(-T_s*data.shape[0], 0, data.shape[0]) + local_timestamp
 
-        # Each row should be a new entry, appending in samples to maintain labels.
-        # Maybe just refactoring to pands would be more convenient?
-        for i, row in enumerate(data):
+            # Each row should be a new entry, appending in samples to maintain labels.
+            # Maybe just refactoring to pands would be more convenient?
+            for i, row in enumerate(data):
+                sample = {
+                    "timestamp": local_timestamp[i],
+                    "device": device_address,
+                    "sensor_type": self.sensor_type.value,
+                    "sensor_data": row,
+                }
+                self.data.append(sample)
+        else:
+            # HR and Temp yield only one sample
             sample = {
-                "timestamp": local_timestamp[i],
+                "timestamp": local_timestamp,
                 "device": device_address,
                 "sensor_type": self.sensor_type.value,
-                "sensor_data": row,
+                "sensor_data": data[0],
             }
             self.data.append(sample)
-
 
