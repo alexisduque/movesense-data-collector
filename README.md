@@ -54,8 +54,8 @@ To start data collection using the CLI, follow these steps:
    devices:         # List of adress-path objects.
    - address: 00:00:00:00:00:00 # MoveSense device address
       paths:                     # List of sensor paths to subscribe to
-      - /Meas/Acc/13           # Find more details in MoveSense
-                                  # official documentation.
+      - /Meas/Acc/13             # Find more details in MoveSense
+                                 # official documentation.
     ```
 
 3. Run the CLI, `--session` argument specifies the location of session config. If not provided
@@ -63,7 +63,7 @@ the CLI will look for "session.yaml" from root. If not found, a plain, empty ses
 connected to and paths subscribed to during runtime.
 
     ```bash
-    python main.py  --session "session.yaml"
+    python -m main  --session "session.yaml"
     ```
 
 4. Follow the on-screen instructions to start and end data collection.
