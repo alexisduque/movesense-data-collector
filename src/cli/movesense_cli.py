@@ -83,12 +83,12 @@ class MovesenseCLI:
 
         try:
             while True:
-                logger.info("Select the device to configure. 'return' to exit back to main menu.")
+                logger.info("Select the device to configure. '10' to exit back to main menu.")
                 self.device_manager.show_connected_devices()
 
                 choice = input()
 
-                if choice == "return":
+                if choice == "10":
                     raise KeyboardInterrupt
                 selected_device = None
                 # If choice based on MAC (MAC address regex)
@@ -96,6 +96,8 @@ class MovesenseCLI:
                     selected_device = next((device for device in self.device_manager.connected_devices
                                             if device.device.address.lower() == choice.lower()),
                                            None)
+                    # Show configuration menu
+                    self.start_single_device_configuration(selected_device)
                 # If choice based on list id
                 else:
                     try:
@@ -105,14 +107,13 @@ class MovesenseCLI:
                         logger.error(f"Invalid input. Please enter a valid list-id as an integer or a MAC address.")
                     except IndexError:
                         logger.error(f"Invalid list-id '{index + 1}'. List-id out of range.")
-
-                # Show configuration menu
-                self.start_single_device_configuration(selected_device)
+                    # Show configuration menu
+                    self.start_single_device_configuration(selected_device, index)
 
         except KeyboardInterrupt:
             logger.info("Exiting the device menu")
 
-    def start_single_device_configuration(self, device):
+    def start_single_device_configuration(self, device, device_index=None):
         try:
             while True:
                 logger.info("What would you like to do?")
@@ -144,8 +145,8 @@ class MovesenseCLI:
                         # Subscription path determines response id (fixed for ease of use), "Meas", the sensor type,
                         # and sampling rate
                         sensor = MovesenseSensor(sensor_full, fs)
-
-                        self.config["devices"][device.address]["paths"].append(
+                        device_selected = device.address if device_index is None else device_index
+                        self.config["devices"][device_selected]["paths"].append(
                             f"Meas/{sensor.sensor_type.value}/{sensor.sampling_rate.value}")
                         self.device_manager.subscribe_to_sensor(device, sensor)
                     except ValueError:
