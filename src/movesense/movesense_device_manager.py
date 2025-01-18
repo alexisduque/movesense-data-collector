@@ -75,7 +75,7 @@ class MovesenseDeviceManager:
         devices = self.run_coroutine_sync(BleakScanner.discover(timeout=5.0))
         found_devices = []
         for device in devices:
-            if show_all or "movesense" in device.name.lower():
+            if show_all or (device.name is not None and "movesense" in device.name.lower()):
                 found_devices.append(device)
                 if logging:
                     logger.info(f"Found device: {len(found_devices)}. {device.name} - {device.address}")
