@@ -70,7 +70,7 @@ connected to and paths subscribed to during runtime.
 
 ## Firmware Installation
 
-For this CLI, the MoveSense devices require the `custom-gattsvc-app` firmware.
+For this CLI, the MoveSense devices require the `gatt-sensordata-app` firmware.
 
 Official instructions for firmware update can be found here:
 - [MoveSense Firmware Installation Guide](https://www.movesense.com/docs/test_env/esw/dfu_update/)
