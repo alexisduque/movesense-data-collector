@@ -75,7 +75,9 @@ class MovesenseDeviceManager:
         devices = self.run_coroutine_sync(BleakScanner.discover(timeout=5.0))
         found_devices = []
         for device in devices:
-            if show_all or (device.name is not None and "movesense" in device.name.lower()):
+            if device.name is None:
+                continue
+            if show_all or "movesense" in device.name.lower():
                 found_devices.append(device)
                 if logging:
                     logger.info(f"Found device: {len(found_devices)}. {device.name} - {device.address}")
@@ -118,7 +120,7 @@ class MovesenseDeviceManager:
 
         self.run_coroutine_sync(rename_coroutine(device, new_name))
 
-    def subsribe_to_sensor(self, device, sensor):
+    def subscribe_to_sensor(self, device, sensor):
         async def subsribe_coroutine(device, sensor):
             # Allow path creation of the sensor.
             if isinstance(sensor, str):
