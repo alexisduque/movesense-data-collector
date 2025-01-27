@@ -1,0 +1,17 @@
+output:
+  path: outputs # Folder to which the data should be saved to
+  filename:     # Filename template, which will be extended with
+                # a number when multiple data collections are done
+devices:         # List of adress-path objects.
+- address: 8FC3CF33-742F-D092-702C-4961A5F2A81D # MoveSense device address 88
+  paths:                     # List of sensor paths to subscribe to
+  - /Meas/Acc/1666           # Find more details in MoveSense
+- address: A5DC4092-9F60-F79D-1F14-2435A616351A # MoveSense device address 96
+  paths:
+  - /Meas/Acc/1666
+- address: 02ABB6FB-A30A-FF7C-2EC3-5BBAA339A2E8 # MoveSense device address 72
+  paths:
+  - /Meas/Acc/1666
+#- address: 19C86820-A8A5-FEA3-F9BA-C0974D3D2B43 # MoveSense device address 89
+#  paths:
+#  - /Meas/Acc/1666

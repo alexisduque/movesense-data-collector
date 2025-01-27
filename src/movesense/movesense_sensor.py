@@ -105,7 +105,7 @@ class MovesenseSensor:
 
         return MovesenseSensor(sensor_type, sampling_rate)
 
-    async def notification_handler(self, device_address, data):
+    async def notification_handler(self, device_name, data):
 
         # Unpack the data based on the sensor, ignoring the timestamp and id
         if self.sensor_type == MovesenseSensorType.ECG:
@@ -145,18 +145,23 @@ class MovesenseSensor:
             for i, row in enumerate(data):
                 sample = {
                     "timestamp": local_timestamp[i],
-                    "device": device_address,
+                    "device": device_name.replace(" ", "_"),
                     "sensor_type": self.sensor_type.value,
                     "sensor_data": row,
                 }
+                s = ""
+                for a in sample['sensor_data']:
+                    s += "," + str(a)
+                print(f"{local_timestamp[i]},{device_name}{s}")
                 self.data.append(sample)
         else:
             # HR and Temp yield only one sample
             sample = {
                 "timestamp": local_timestamp,
-                "device": device_address,
+                "device": device_name,
                 "sensor_type": self.sensor_type.value,
                 "sensor_data": data[0],
             }
+            print(f"{local_timestamp[i]},{row}")
             self.data.append(sample)
 

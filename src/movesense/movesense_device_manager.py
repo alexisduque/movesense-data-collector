@@ -36,7 +36,7 @@ class ConnectedDevice:
         packet = struct.unpack(packet_structure, id_data)
         sensor_id = int.from_bytes(packet[1], byteorder='little')
 
-        await self.sensors[sensor_id].notification_handler(self.device.address, data)
+        await self.sensors[sensor_id].notification_handler(self.device.name, data)
 
 
 class MovesenseDeviceManager:
@@ -53,7 +53,7 @@ class MovesenseDeviceManager:
                 connected_device = self.search_and_connect(d['address'])
 
                 for path in d['paths']:
-                    self.subsribe_to_sensor(connected_device, path)
+                    self.subscribe_to_sensor(connected_device, path)
 
             logger.info("Session config loaded.")
 
