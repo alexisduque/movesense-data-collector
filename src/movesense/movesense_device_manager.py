@@ -51,7 +51,8 @@ class MovesenseDeviceManager:
             for d in config["devices"]:
 
                 connected_device = self.search_and_connect(d['address'])
-
+                if not connected_device:
+                    continue
                 for path in d['paths']:
                     self.subscribe_to_sensor(connected_device, path)
 
@@ -102,7 +103,7 @@ class MovesenseDeviceManager:
 
             if connectable_device is None:
                 logger.error(f"Could not connect to device {address}")
-
+                return None
             return await self._async_connect(connectable_device)
 
         # Separated so async contexts don't start new async contexts.
