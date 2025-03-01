@@ -1,6 +1,6 @@
 output:
   path: outputs # Folder to which the data should be saved to
-  filename:     # Filename template, which will be extended with
+  filename: data_output.csv    # Filename template, which will be extended with
                 # a number when multiple data collections are done
 devices:         # List of adress-path objects.
 - address: 8FC3CF33-742F-D092-702C-4961A5F2A81D # MoveSense device address 88
