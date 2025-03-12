@@ -11,19 +11,24 @@ on desktop devices, with ease of connectivity to multiple devices and combining 
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Firmware Installation](#firmware-installation)
-- [Contributing](#contributing)
-- [Issues](#issues)
-- [WIP Tasks](#wip-tasks)
+- [MoveSense Data Collector](#movesense-data-collector)
+  - [Description](#description)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Firmware Installation](#firmware-installation)
+  - [Contributing](#contributing)
+  - [Issues](#issues)
+  - [WIP Tasks](#wip-tasks)
+  - [Contributors](#contributors)
 
 ## Installation
 
 1. Clone this repository:
 
     ```bash
-    git clone https://github.com/HerraHiekka/MoveSenseDataCollectior.git
+    git clone https://github.com/alexisduque/movesense-data-collector.git
+
     ```
 
 2. Navigate to the project directory:
